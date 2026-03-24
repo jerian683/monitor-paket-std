@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPX Express — Hub Tarakan Timur v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2235;--border:#1f2d45;
+  --accent:#f97316;--accent2:#fb923c;
+  --red:#ef4444;--yellow:#eab308;--green:#22c55e;--blue:#3b82f6;--purple:#a855f7;--cyan:#06b6d4;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+/* HEADER */
+.header{background:linear-gradient(135deg,#0d1420,#111827);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-badge{background:var(--accent);color:#000;font-family:var(--mono);font-weight:700;font-size:12px;padding:3px 9px;border-radius:4px;}
+.logo-title{font-size:13px;font-weight:600;color:var(--text2);}
+.logo-sub{font-size:10px;color:var(--text3);font-family:var(--mono);}
+.header-right{display:flex;align-items:center;gap:14px;}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--green);font-family:var(--mono);}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-g 2s infinite;}
+@keyframes pulse-g{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.3);}}
+.clock{font-family:var(--mono);font-size:12px;color:var(--text2);}
+/* NAV TABS */
+.nav-tabs{display:flex;gap:4px;padding:12px 20px 0;border-bottom:1px solid var(--border);background:var(--surface);}
+.nav-tab{padding:8px 18px;border-radius:8px 8px 0 0;font-size:12px;font-weight:600;cursor:pointer;border:1px solid transparent;border-bottom:none;transition:all .2s;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;}
+.nav-tab.active{background:var(--bg);border-color:var(--border);color:var(--text);border-bottom:1px solid var(--bg);}
+.nav-tab:hover:not(.active){color:var(--text2);}
+/* MAIN */
+.main{padding:20px;max-width:1600px;margin:0 auto;}
+/* TAB PANELS */
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:36px;text-align:center;cursor:pointer;transition:all .25s;background:var(--surface);position:relative;overflow:hidden;margin-bottom:16px;}
+.upload-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(249,115,22,.05),transparent 70%);pointer-events:none;}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(249,115,22,.04);}
+.upload-icon{font-size:40px;margin-bottom:12px;display:block;}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:6px;}
+.upload-sub{font-size:12px;color:var(--text2);margin-bottom:16px;}
+.upload-btn{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#000;font-weight:700;font-size:12px;padding:9px 20px;border-radius:7px;border:none;cursor:pointer;transition:all .2s;font-family:var(--sans);}
+.upload-btn:hover{background:var(--accent2);transform:translateY(-1px);}
+input[type="file"]{display:none;}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;position:relative;overflow:hidden;transition:transform .2s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;}
+.stat-card.total::after{background:var(--blue);}
+.stat-card.onhold::after{background:var(--red);}
+.stat-card.urgent::after{background:linear-gradient(90deg,var(--red),var(--accent));}
+.stat-card.running::after{background:var(--yellow);}
+.stat-card.std::after{background:var(--purple);}
+.stat-card.risk::after{background:var(--cyan);}
+.stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);margin-bottom:8px;}
+.stat-value{font-size:30px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:4px;}
+.stat-card.total .stat-value{color:var(--blue);}
+.stat-card.onhold .stat-value{color:var(--red);}
+.stat-card.urgent .stat-value{color:var(--accent);}
+.stat-card.running .stat-value{color:var(--yellow);}
+.stat-card.std .stat-value{color:var(--purple);}
+.stat-card.risk .stat-value{color:var(--cyan);}
+.stat-sub{font-size:10px;color:var(--text3);}
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:11px;font-weight:600;display:flex;align-items:center;gap:7px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--text2);}
+.card-body{padding:16px;}
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.search-input{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text);font-size:12px;font-family:var(--sans);outline:none;transition:border-color .2s;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--text3);}
+.filter-select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-size:12px;font-family:var(--sans);outline:none;cursor:pointer;}
+.filter-select:focus{border-color:var(--accent);}
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:7px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead th{background:var(--surface2);padding:9px 12px;text-align:left;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;}
+thead th:hover{color:var(--text2);}
+tbody tr{border-bottom:1px solid rgba(31,45,69,.5);transition:background .15s;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+tbody tr:last-child{border-bottom:none;}
+td{padding:9px 12px;white-space:nowrap;color:var(--text2);}
+tbody tr.status-red{border-left:3px solid var(--red);}
+tbody tr.status-yellow{border-left:3px solid var(--yellow);}
+tbody tr.status-green{border-left:3px solid var(--green);}
+tbody tr.status-purple{border-left:3px solid var(--purple);}
+tbody tr.status-cyan{border-left:3px solid var(--cyan);}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red);}
+.badge-yellow{background:rgba(234,179,8,.15);color:var(--yellow);}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green);}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue);}
+.badge-orange{background:rgba(249,115,22,.15);color:var(--accent);}
+.badge-purple{background:rgba(168,85,247,.15);color:var(--purple);}
+.badge-cyan{background:rgba(6,182,212,.15);color:var(--cyan);}
+/* RISK METER */
+.risk-meter{display:flex;align-items:center;gap:6px;}
+.risk-bar{height:6px;border-radius:99px;flex:1;background:var(--border);overflow:hidden;}
+.risk-fill{height:100%;border-radius:99px;transition:width .4s;}
+.risk-pct{font-size:10px;font-family:var(--mono);min-width:28px;text-align:right;}
+/* STD MONITORING SPECIAL SECTION */
+.std-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.std-alert-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;transition:border-color .2s;}
+.std-alert-card.risk-high{border-color:rgba(239,68,68,.4);}
+.std-alert-card.risk-med{border-color:rgba(234,179,8,.35);}
+.std-alert-card.risk-low{border-color:rgba(34,197,94,.3);}
+.std-alert-title{font-size:11px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.std-alert-list{display:flex;flex-direction:column;gap:6px;}
+.std-alert-item{display:flex;align-items:center;gap:8px;font-size:11px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,.03);}
+/* CHECKLIST TOOLS */
+.checklist-wrap{display:flex;flex-direction:column;gap:8px;}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);}
+.checklist-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.checklist-content{flex:1;}
+.checklist-title{font-size:12px;font-weight:600;margin-bottom:2px;}
+.checklist-desc{font-size:11px;color:var(--text3);}
+.checklist-action{font-size:10px;font-family:var(--mono);}
+/* SLA TIMER */
+.sla-indicator{display:flex;align-items:center;gap:6px;font-size:10px;font-family:var(--mono);}
+.sla-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+/* DRIVER PANEL */
+.driver-list{display:flex;flex-direction:column;gap:8px;}
+.driver-item{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.driver-item.danger{border-color:rgba(239,68,68,.3);}
+.driver-item.risk{border-color:rgba(6,182,212,.3);}
+.driver-rank{font-family:var(--mono);font-size:10px;color:var(--text3);width:18px;text-align:center;}
+.driver-info{flex:1;min-width:0;}
+.driver-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;}
+.driver-id{font-size:9px;color:var(--text3);font-family:var(--mono);}
+.driver-stats{display:flex;gap:8px;}
+.driver-stat{text-align:center;min-width:32px;}
+.driver-stat-val{font-family:var(--mono);font-size:13px;font-weight:700;}
+.driver-stat-lbl{font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.chart-container{position:relative;height:200px;}
+/* BTN */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;border:1px solid var(--border);font-size:11px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .2s;}
+.btn-green{background:rgba(34,197,94,.1);color:var(--green);border-color:rgba(34,197,94,.3);}
+.btn-green:hover{background:rgba(34,197,94,.2);}
+.btn-blue{background:rgba(59,130,246,.1);color:var(--blue);border-color:rgba(59,130,246,.3);}
+.btn-blue:hover{background:rgba(59,130,246,.2);}
+.btn-purple{background:rgba(168,85,247,.1);color:var(--purple);border-color:rgba(168,85,247,.3);}
+.btn-purple:hover{background:rgba(168,85,247,.2);}
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:11px;color:var(--text3);}
+.page-btns{display:flex;gap:4px;}
+.page-btn{width:28px;height:28px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-family:var(--mono);}
+.page-btn:hover,.page-btn.active{background:var(--accent);color:#000;border-color:var(--accent);}
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-icon{font-size:32px;margin-bottom:10px;display:block;}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.empty-sub{font-size:12px;}
+/* ERROR */
+.error-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px 14px;font-size:11px;color:var(--red);font-family:var(--mono);display:none;margin-top:10px;}
+.error-box.show{display:block;}
+.success-pill{display:none;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:9px 14px;font-size:11px;color:var(--green);font-family:var(--mono);margin-top:10px;align-items:center;gap:7px;}
+.success-pill.show{display:flex;}
+/* ALERTS BANNER */
+.alerts-banner{display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:9px;padding:10px 14px;margin-bottom:16px;}
+.alerts-banner.show{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.std-risk-banner{display:none;background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.3);border-radius:9px;padding:10px 14px;margin-bottom:16px;}
+.std-risk-banner.show{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+/* TOAST */
+.toast-container{position:fixed;top:70px;right:16px;z-index:999;display:flex;flex-direction:column;gap:7px;}
+.toast{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-size:11px;font-family:var(--mono);display:flex;align-items:center;gap:7px;animation:siR .3s ease;max-width:300px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.toast.toast-warn{border-color:rgba(239,68,68,.4);color:var(--red);}
+.toast.toast-info{border-color:rgba(59,130,246,.4);color:var(--blue);}
+.toast.toast-success{border-color:rgba(34,197,94,.4);color:var(--green);}
+.toast.toast-cyan{border-color:rgba(6,182,212,.4);color:var(--cyan);}
+@keyframes siR{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:translateX(0);}}
+/* SECTION LABEL */
+.section-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+/* COUNT BADGE */
+.count-badge{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:9px;font-family:var(--mono);color:var(--text3);}
+.danger-badge{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:var(--red);}
+.cyan-badge{background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.3);color:var(--cyan);}
+/* PROGRESS */
+.prog-wrap{background:var(--border);border-radius:99px;height:3px;overflow:hidden;margin-top:5px;}
+.prog-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+/* RESPONSIVE */
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr);}.charts-row{grid-template-columns:1fr 1fr;}.std-grid{grid-template-columns:1fr;}}
+@media(max-width:768px){.main{padding:10px;}.stats-grid{grid-template-columns:repeat(2,1fr);}.charts-row{grid-template-columns:1fr;}.nav-tabs{overflow-x:auto;white-space:nowrap;}.logo-title,.logo-sub{display:none;}}
+/* SLA COLUMN */
+.sla-ok{color:var(--green);}
+.sla-warn{color:var(--yellow);}
+.sla-crit{color:var(--red);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <span class="logo-badge">SPX</span>
+    <div>
+      <div class="logo-title">Express Monitoring Dashboard</div>
+      <div class="logo-sub">Hub Tarakan Timur v2.0 — STD Monitor</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('overview')">📊 Overview</div>
+  <div class="nav-tab" onclick="switchTab('std')">🎯 Monitor STD</div>
+  <div class="nav-tab" onclick="switchTab('onhold')">🔴 ON-HOLD</div>
+  <div class="nav-tab" onclick="switchTab('driver')">🚗 Driver</div>
+  <div class="nav-tab" onclick="switchTab('upload')">📂 Upload</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<main class="main">
+
+<!-- ===== TAB: OVERVIEW ===== -->
+<div class="tab-panel active" id="tab-overview">
+
+  <!-- ALERTS -->
+  <div class="alerts-banner" id="alertsBanner"></div>
+  <div class="std-risk-banner" id="stdRiskBanner"></div>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card total"><div class="stat-label">Total Paket</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">semua data</div></div>
+    <div class="stat-card onhold"><div class="stat-label">ON-HOLD Hari Ini</div><div class="stat-value" id="statOnhold">0</div><div class="stat-sub">Is Today Onhold = Y</div></div>
+    <div class="stat-card urgent"><div class="stat-label">Belum Ditangani</div><div class="stat-value" id="statUrgent">0</div><div class="stat-sub">ON-HOLD + belum jalan</div></div>
+    <div class="stat-card running"><div class="stat-label">Sedang Delivering</div><div class="stat-value" id="statRunning">0</div><div class="stat-sub">ada delivering time</div></div>
+    <div class="stat-card std"><div class="stat-label">Paket STD</div><div class="stat-value" id="statStd">0</div><div class="stat-sub">Standard priority</div></div>
+    <div class="stat-card risk"><div class="stat-label">STD Berisiko</div><div class="stat-value" id="statRisk">0</div><div class="stat-sub">berpotensi reschedule</div></div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-row" id="chartsSection" style="display:none">
+    <div class="card">
+      <div class="card-header"><div class="card-title">📊 ON-HOLD per Zone</div></div>
+      <div class="card-body"><div class="chart-container"><canvas id="zoneChart"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">🎯 STD vs ON-HOLD</div></div>
+      <div class="card-body"><div class="chart-container"><canvas id="stdChart"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">🚗 Beban Driver</div></div>
+      <div class="card-body"><div class="chart-container"><canvas id="driverChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- QUICK TABLE -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">⚡ Semua Paket <span class="count-badge" id="tableCount">0</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
+        <button class="btn btn-blue" onclick="exportPDF()">🖨 PDF</button>
+      </div>
+    </div>
+    <div class="card-body" style="padding:14px">
+      <div class="filter-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Cari SPX TN / Driver / Zone..." oninput="applyFilters()">
+        <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+          <option value="">Semua Status</option>
+          <option value="red">ON-HOLD Urgent</option>
+          <option value="cyan">STD Berisiko</option>
+          <option value="yellow">Assigned Belum Jalan</option>
+          <option value="green">Delivering</option>
+        </select>
+        <select class="filter-select" id="filterZone" onchange="applyFilters()">
+          <option value="">Semua Zone</option>
+        </select>
+        <select class="filter-select" id="filterType" onchange="applyFilters()">
+          <option value="">Semua Tipe</option>
+          <option value="STD">STD (Standard)</option>
+          <option value="FWD">Forward</option>
+          <option value="RTN">Return</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table id="mainTable">
+          <thead><tr>
+            <th onclick="sortTable('spxTn')">SPX TN ↕</th>
+            <th onclick="sortTable('priority')">Prioritas ↕</th>
+            <th onclick="sortTable('driverName')">Driver ↕</th>
+            <th onclick="sortTable('zoneName')">Zone ↕</th>
+            <th onclick="sortTable('slaStatus')">SLA ↕</th>
+            <th onclick="sortTable('onholdReason')">Alasan Hold</th>
+            <th onclick="sortTable('status')">Status ↕</th>
+            <th onclick="sortTable('assignedTime')">Assigned ↕</th>
+            <th onclick="sortTable('deliveringTime')">Delivering ↕</th>
+          </tr></thead>
+          <tbody id="mainTableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <span class="empty-icon">📁</span>
+        <div class="empty-title">Belum ada data</div>
+        <div class="empty-sub">Buka tab Upload untuk memasukkan data Excel</div>
+      </div>
+      <div class="pagination" id="paginationWrap" style="display:none">
+        <span id="paginationInfo"></span>
+        <div class="page-btns" id="pageBtns"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB: STD MONITOR ===== -->
+<div class="tab-panel" id="tab-std">
+  <div class="section-label">Tools Monitor Paket STD — Cegah ON-HOLD & Reschedule</div>
+
+  <!-- STD STATS STRIP -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="stat-card std"><div class="stat-label">Total STD</div><div class="stat-value" id="s2Total">0</div><div class="stat-sub">paket standard</div></div>
+    <div class="stat-card risk"><div class="stat-label">Berisiko Reschedule</div><div class="stat-value" id="s2Risk">0</div><div class="stat-sub">belum jalan + terlambat</div></div>
+    <div class="stat-card onhold"><div class="stat-label">STD ON-HOLD</div><div class="stat-value" id="s2Onhold">0</div><div class="stat-sub">sudah kena hold</div></div>
+    <div class="stat-card running"><div class="stat-label">STD Aman</div><div class="stat-value" id="s2Safe">0</div><div class="stat-sub">delivering berjalan</div></div>
+  </div>
+
+  <!-- RISK CATEGORIES -->
+  <div class="std-grid">
+    <!-- HIGH RISK -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--red)">🔴 STD Berisiko Tinggi <span class="count-badge danger-badge" id="highRiskCount">0</span></div>
+      </div>
+      <div class="card-body" style="padding:12px">
+        <div class="std-alert-list" id="highRiskList">
+          <div class="empty-state" style="padding:20px"><div class="empty-title">Tidak ada paket berisiko tinggi</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- MED RISK -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" style="color:var(--yellow)">🟡 STD Perlu Perhatian <span class="count-badge" id="medRiskCount" style="border-color:rgba(234,179,8,.3);color:var(--yellow)">0</span></div>
+      </div>
+      <div class="card-body" style="padding:12px">
+        <div class="std-alert-list" id="medRiskList">
+          <div class="empty-state" style="padding:20px"><div class="empty-title">Tidak ada paket perlu perhatian</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION CHECKLIST TOOLS -->
+  <div class="section-label">Checklist Tindakan Pencegahan</div>
+  <div class="checklist-wrap">
+    <div class="checklist-item">
+      <div class="checklist-icon" style="background:rgba(239,68,68,.15)">🚨</div>
+      <div class="checklist-content">
+        <div class="checklist-title">1. Cek STD belum di-assign sejak > 2 jam</div>
+        <div class="checklist-desc">Paket STD yang sudah diterima hub tapi belum di-assign ke driver berpotensi gagal delivering hari ini</div>
+        <div class="checklist-action" style="color:var(--cyan);margin-top:6px" id="checkUnassigned">— Upload data untuk analisis —</div>
+      </div>
+      <button class="btn btn-purple" onclick="filterStdUnassigned()">Lihat Paket ↗</button>
+    </div>
+    <div class="checklist-item">
+      <div class="checklist-icon" style="background:rgba(234,179,8,.15)">⏱</div>
+      <div class="checklist-content">
+        <div class="checklist-title">2. STD Assigned tapi belum berangkat > 1 jam</div>
+        <div class="checklist-desc">Sudah di-assign ke driver tapi tidak ada Delivering Time — driver perlu dikonfirmasi untuk segera berangkat</div>
+        <div class="checklist-action" style="color:var(--yellow);margin-top:6px" id="checkSlowStart">— Upload data untuk analisis —</div>
+      </div>
+      <button class="btn btn-purple" onclick="filterStdSlowStart()">Lihat Paket ↗</button>
+    </div>
+    <div class="checklist-item">
+      <div class="checklist-icon" style="background:rgba(168,85,247,.15)">📍</div>
+      <div class="checklist-content">
+        <div class="checklist-title">3. Driver STD dengan ON-HOLD terbanyak</div>
+        <div class="checklist-desc">Driver yang berulang kali ON-HOLD paket STD — perlu coaching atau redistribusi paket</div>
+        <div class="checklist-action" style="color:var(--purple);margin-top:6px" id="checkDriverHold">— Upload data untuk analisis —</div>
+      </div>
+      <button class="btn btn-purple" onclick="switchTab('driver')">Lihat Driver ↗</button>
+    </div>
+    <div class="checklist-item">
+      <div class="checklist-icon" style="background:rgba(6,182,212,.15)">🗺</div>
+      <div class="checklist-content">
+        <div class="checklist-title">4. Zone dengan konsentrasi STD ON-HOLD</div>
+        <div class="checklist-desc">Zone tertentu yang konsisten menghasilkan ON-HOLD — bisa karena akses jalan, volume tinggi, atau driver kurang</div>
+        <div class="checklist-action" style="color:var(--cyan);margin-top:6px" id="checkZoneHold">— Upload data untuk analisis —</div>
+      </div>
+      <button class="btn btn-purple" onclick="filterStdByZone()">Lihat Zone ↗</button>
+    </div>
+    <div class="checklist-item">
+      <div class="checklist-icon" style="background:rgba(34,197,94,.15)">✅</div>
+      <div class="checklist-content">
+        <div class="checklist-title">5. Paket STD Return yang belum diproses</div>
+        <div class="checklist-desc">STD Return yang sudah lama di hub tanpa Delivering Time — bisa menumpuk dan membebani kapasitas hub</div>
+        <div class="checklist-action" style="color:var(--green);margin-top:6px" id="checkReturn">— Upload data untuk analisis —</div>
+      </div>
+      <button class="btn btn-purple" onclick="filterStdReturn()">Lihat Return ↗</button>
+    </div>
+  </div>
+
+  <!-- STD TABLE -->
+  <div style="margin-top:16px">
+    <div class="section-label">Tabel STD Detail</div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 Paket STD <span class="count-badge cyan-badge" id="stdTableCount">0</span></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-purple" onclick="exportStdExcel()">⬇ Export STD</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:14px">
+        <div class="filter-bar">
+          <input type="text" class="search-input" id="stdSearchInput" placeholder="🔍 Cari STD TN / Driver..." oninput="applyStdFilters()">
+          <select class="filter-select" id="stdFilterRisk" onchange="applyStdFilters()">
+            <option value="">Semua Level Risiko</option>
+            <option value="high">Berisiko Tinggi</option>
+            <option value="med">Perlu Perhatian</option>
+            <option value="low">Aman</option>
+          </select>
+          <select class="filter-select" id="stdFilterZone" onchange="applyStdFilters()">
+            <option value="">Semua Zone</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>SPX TN</th>
+              <th>Tipe</th>
+              <th>Driver</th>
+              <th>Zone</th>
+              <th>Risiko</th>
+              <th>Status</th>
+              <th>Assigned</th>
+              <th>Delivering</th>
+              <th>ON-HOLD</th>
+              <th>Alasan</th>
+            </tr></thead>
+            <tbody id="stdTableBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="stdEmptyState">
+          <span class="empty-icon">🎯</span>
+          <div class="empty-title">Belum ada data STD</div>
+          <div class="empty-sub">Upload data Excel untuk melihat paket Standard</div>
+        </div>
+        <div class="pagination" id="stdPaginationWrap" style="display:none">
+          <span id="stdPaginationInfo"></span>
+          <div class="page-btns" id="stdPageBtns"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB: ON-HOLD ===== -->
+<div class="tab-panel" id="tab-onhold">
+  <div class="section-label">Monitoring Paket ON-HOLD</div>
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="stat-card onhold"><div class="stat-label">Total ON-HOLD</div><div class="stat-value" id="oh_total">0</div><div class="stat-sub">hari ini</div></div>
+    <div class="stat-card urgent"><div class="stat-label">Belum Bergerak > 2 jam</div><div class="stat-value" id="oh_stale">0</div><div class="stat-sub">kritis</div></div>
+    <div class="stat-card std"><div class="stat-label">ON-HOLD STD</div><div class="stat-value" id="oh_std">0</div><div class="stat-sub">standard priority</div></div>
+    <div class="stat-card running"><div class="stat-label">Sudah Resolusi</div><div class="stat-value" id="oh_resolved">0</div><div class="stat-sub">delivering setelah hold</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title" style="color:var(--red)">🔴 Daftar Paket ON-HOLD <span class="count-badge danger-badge" id="ohTableCount">0</span></div>
+      <button class="btn btn-green" onclick="exportOnholdExcel()">⬇ Export ON-HOLD</button>
+    </div>
+    <div class="card-body" style="padding:14px">
+      <!-- ROW 1: SEARCH + KATEGORI ALASAN -->
+      <div class="filter-bar" style="margin-bottom:8px">
+        <input type="text" class="search-input" id="ohSearch" placeholder="🔍 Cari SPX TN / Driver / Alasan..." oninput="applyOnholdFilters()">
+        <select class="filter-select" id="ohFilterCategory" onchange="applyOnholdFilters()" style="min-width:200px">
+          <option value="">📋 Semua Kategori Alasan</option>
+          <option value="reschedule">🔄 Reschedule</option>
+          <option value="reject">❌ Reject / Ditolak</option>
+          <option value="notHome">🏠 Customer Not Home</option>
+          <option value="address">📍 Alamat Bermasalah</option>
+          <option value="noPhone">📵 Tidak Bisa Dihubungi</option>
+          <option value="other">🔹 Alasan Lainnya</option>
+          <option value="__nonreject__">✅ Semua KECUALI Reject</option>
+        </select>
+        <select class="filter-select" id="ohFilterReason" onchange="applyOnholdFilters()">
+          <option value="">Semua Alasan Spesifik</option>
+        </select>
+      </div>
+      <!-- ROW 2: ZONE + DRIVER + RESOLUSI + DURASI -->
+      <div class="filter-bar">
+        <select class="filter-select" id="ohFilterZone" onchange="applyOnholdFilters()">
+          <option value="">Semua Zone</option>
+        </select>
+        <select class="filter-select" id="ohFilterDriver" onchange="applyOnholdFilters()">
+          <option value="">Semua Driver</option>
+        </select>
+        <select class="filter-select" id="ohFilterResolved" onchange="applyOnholdFilters()">
+          <option value="">Semua Status Resolusi</option>
+          <option value="no">⏳ Belum Resolusi</option>
+          <option value="yes">✅ Sudah Resolusi</option>
+        </select>
+        <select class="filter-select" id="ohFilterDuration" onchange="applyOnholdFilters()">
+          <option value="">Semua Durasi Hold</option>
+          <option value="crit">🔴 Kritis (&gt; 2 jam)</option>
+          <option value="warn">🟡 Perhatian (1–2 jam)</option>
+          <option value="ok">🟢 Baru (&lt; 1 jam)</option>
+        </select>
+        <button class="btn btn-outline" onclick="resetOnholdFilters()" style="font-size:11px;color:var(--text3)">↺ Reset</button>
+      </div>
+      <!-- ACTIVE FILTER INFO + REASON CHIPS -->
+      <div id="ohActiveInfo" style="display:none;margin-bottom:8px;padding:6px 10px;background:rgba(6,182,212,.07);border:1px solid rgba(6,182,212,.2);border-radius:6px;font-size:11px;color:var(--cyan);font-family:var(--mono)"></div>
+      <div id="ohReasonChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>SPX TN</th><th>Driver</th><th>Zone</th><th>Kategori</th><th>Alasan ON-HOLD</th><th>Waktu Hold</th><th>Durasi Hold</th><th>Status Akhir</th><th>Tipe</th>
+          </tr></thead>
+          <tbody id="ohTableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="ohEmptyState">
+        <span class="empty-icon">🔴</span>
+        <div class="empty-title">Tidak ada paket ON-HOLD</div>
+        <div class="empty-sub">Upload data untuk melihat paket ON-HOLD</div>
+      </div>
+      <div class="pagination" id="ohPaginationWrap" style="display:none">
+        <span id="ohPaginationInfo"></span>
+        <div class="page-btns" id="ohPageBtns"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB: DRIVER ===== -->
+<div class="tab-panel" id="tab-driver">
+  <div class="section-label">Performa & Monitoring Driver</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">🏆 Ranking Driver <span class="count-badge danger-badge" id="driverDangerCount" style="display:none"></span></div>
+    </div>
+    <div class="card-body">
+      <div class="driver-list" id="driverList">
+        <div class="empty-state"><span class="empty-icon">🚗</span><div class="empty-title">Belum ada data driver</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TAB: UPLOAD ===== -->
+<div class="tab-panel" id="tab-upload">
+  <div class="section-label">Upload File Data</div>
+  <div class="upload-zone" id="uploadZone">
+    <span class="upload-icon">📦</span>
+    <div class="upload-title">Drag & Drop file Excel atau CSV</div>
+    <div class="upload-sub">Format: .xlsx / .xls / .csv | Kolom wajib: SPX TN, Is Today Onhold<br>Kolom STD: pastikan kolom <b>Order Account</b> atau <b>Priority</b> memuat nilai "STD"</div>
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">📂 Pilih File</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+  </div>
+  <div class="error-box" id="errorBox"></div>
+  <div class="success-pill" id="successPill"><span>✅</span><span id="successText"></span></div>
+
+  <!-- COLUMN GUIDE -->
+  <div style="margin-top:20px">
+    <div class="section-label">Panduan Kolom Excel</div>
+    <div class="card">
+      <div class="card-body">
+        <table style="font-size:11px;width:100%">
+          <thead><tr>
+            <th style="padding:8px;background:var(--surface2);border-radius:4px">Nama Kolom</th>
+            <th style="padding:8px;background:var(--surface2)">Wajib?</th>
+            <th style="padding:8px;background:var(--surface2)">Keterangan</th>
+            <th style="padding:8px;background:var(--surface2)">Contoh Nilai</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:7px 8px;font-family:var(--mono);color:var(--accent)">SPX TN</td><td style="padding:7px 8px"><span class="badge badge-red">WAJIB</span></td><td style="padding:7px 8px;color:var(--text2)">Nomor resi paket</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">IDSPX123456</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono);color:var(--accent)">Is Today Onhold</td><td style="padding:7px 8px"><span class="badge badge-red">WAJIB</span></td><td style="padding:7px 8px;color:var(--text2)">Status ON-HOLD hari ini</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">Y / N</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">Forward/Return</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Tipe pengiriman</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">Forward / Return</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">Order Account</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Akun/kode prioritas — sistem deteksi "STD" dari kolom ini</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">STD / EXPRESS</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">Zone ID / Zone Name</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Identitas zona pengiriman</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">Z001 / Tarakan Barat</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">Driver ID / Driver Name</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Identitas driver</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">D001 / Budi Santoso</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">Assigned Time</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Waktu assign ke driver</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">2025-01-15 08:30</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">Delivering Time</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Waktu mulai delivering</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">2025-01-15 09:00</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">On-hold Time</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Waktu masuk ON-HOLD</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">2025-01-15 10:30</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">On-hold Reason</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Alasan ON-HOLD</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">Customer not home</td></tr>
+            <tr><td style="padding:7px 8px;font-family:var(--mono)">LMHub Received Time</td><td style="padding:7px 8px"><span class="badge badge-blue">Opsional</span></td><td style="padding:7px 8px;color:var(--text2)">Waktu diterima hub — penting untuk hitung SLA STD</td><td style="padding:7px 8px;font-family:var(--mono);color:var(--text3)">2025-01-15 07:00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let allData = [], filteredData = [], stdData = [], filteredStdData = [], onholdData = [], filteredOnholdData = [];
+let currentPage = 1, stdPage = 1, ohPage = 1;
+const PAGE_SIZE = 20;
+let sortKey = '', sortAsc = true;
+let zoneChart = null, stdChart = null, driverChart = null;
+
+// ============================================================
+// CLOCK
+// ============================================================
+setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID'); }, 1000);
+document.getElementById('clock').textContent = new Date().toLocaleTimeString('id-ID');
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const tabs = ['overview','std','onhold','driver','upload'];
+  const idx = tabs.indexOf(name);
+  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+}
+
+// ============================================================
+// UPLOAD
+// ============================================================
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); e.target.value = ''; });
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','csv'].includes(ext)) { showError('❌ Format tidak didukung. Gunakan .xlsx atau .csv'); return; }
+  showToast('info', '📂 Memproses ' + file.name + '...');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array', cellDates:true });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+      if (!rows.length) { showError('❌ File kosong'); return; }
+      validateAndLoad(rows, file.name);
+    } catch(err) { showError('❌ Gagal membaca: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+const COL_MAP = {
+  spxTn:['SPX TN','spx tn','resi','tracking number'],
+  type:['Forward/Return','forward/return','type'],
+  orderAccount:['Order Account','order account','priority','service type'],
+  zoneId:['Zone ID','zone id'],
+  zoneName:['Zone Name','zone name','zone'],
+  driverId:['Driver ID','driver id'],
+  driverName:['Driver Name','driver name','driver'],
+  lmhubTime:['LMHub Received Time','lmhub received time','received time'],
+  assignedTime:['Assigned Time','assigned time'],
+  deliveringTime:['Delivering Time','delivering time'],
+  onholdTime:['On-hold Time','on-hold time','onhold time'],
+  onholdReason:['On-hold Reason','on-hold reason','onhold reason'],
+  isTodayOnhold:['Is Today Onhold','is today onhold','today onhold'],
+};
+
+function findCol(keys, aliases) {
+  for (const a of aliases) {
+    const found = keys.find(k => k.trim().toLowerCase() === a.toLowerCase());
+    if (found) return found;
+  }
+  return null;
+}
+
+function parseTime(str) {
+  if (!str) return null;
+  try { const d = new Date(str); return isNaN(d) ? null : d; } catch { return null; }
+}
+
+function hoursDiff(t) {
+  if (!t) return null;
+  return (new Date() - t) / 3600000;
+}
+
+function validateAndLoad(rows, fname) {
+  const keys = Object.keys(rows[0]);
+  const colKeys = {};
+  for (const [f, aliases] of Object.entries(COL_MAP)) colKeys[f] = findCol(keys, aliases);
+
+  if (!colKeys.spxTn || !colKeys.isTodayOnhold) {
+    showError('❌ Kolom wajib tidak ditemukan: SPX TN, Is Today Onhold\nKolom tersedia: ' + keys.join(', '));
+    return;
+  }
+
+  const now = new Date();
+  allData = rows.map((row, i) => {
+    const get = f => colKeys[f] ? String(row[colKeys[f]] || '').trim() : '';
+    const isOnhold = get('isTodayOnhold').toUpperCase() === 'Y';
+    const hasDelivering = get('deliveringTime') !== '';
+    const hasAssigned = get('assignedTime') !== '';
+    const account = get('orderAccount').toUpperCase();
+    const isStd = account.includes('STD') || account.includes('STANDARD');
+    const assignedT = parseTime(get('assignedTime'));
+    const delivT = parseTime(get('deliveringTime'));
+    const holdT = parseTime(get('onholdTime'));
+    const lmhubT = parseTime(get('lmhubTime'));
+    const assignedHrsAgo = hoursDiff(assignedT);
+    const lmhubHrsAgo = hoursDiff(lmhubT);
+
+    // STD Risk scoring
+    let riskLevel = 'low';
+    let riskReason = '';
+    if (isStd) {
+      if (isOnhold && !hasDelivering) { riskLevel = 'high'; riskReason = 'ON-HOLD belum delivering'; }
+      else if (!hasAssigned && lmhubHrsAgo !== null && lmhubHrsAgo > 2) { riskLevel = 'high'; riskReason = `Belum di-assign (${lmhubHrsAgo.toFixed(1)} jam di hub)`; }
+      else if (hasAssigned && !hasDelivering && assignedHrsAgo !== null && assignedHrsAgo > 1) { riskLevel = 'med'; riskReason = `Assigned ${assignedHrsAgo.toFixed(1)} jam, belum berangkat`; }
+      else if (!hasDelivering && isOnhold) { riskLevel = 'med'; riskReason = 'ON-HOLD, cek resolusi'; }
+    }
+
+    let status = 'yellow';
+    if (isStd && riskLevel === 'high' && !hasDelivering) status = 'cyan';
+    if (isOnhold && !hasDelivering) status = 'red';
+    else if (hasDelivering) status = 'green';
+    else if (!hasAssigned) status = 'blue';
+
+    // SLA check
+    let slaStatus = 'ok', slaText = '—';
+    if (lmhubT) {
+      const hrsInHub = (now - lmhubT) / 3600000;
+      if (hrsInHub > 8) { slaStatus = 'crit'; slaText = `${hrsInHub.toFixed(1)}j ⚠`; }
+      else if (hrsInHub > 5) { slaStatus = 'warn'; slaText = `${hrsInHub.toFixed(1)}j`; }
+      else { slaStatus = 'ok'; slaText = `${hrsInHub.toFixed(1)}j`; }
+    }
+
+    const fwdType = get('type').toLowerCase();
+    const priority = isStd ? 'STD' : (fwdType.includes('return') ? 'RTN' : 'FWD');
+
+    return {
+      id: i, spxTn: get('spxTn'), type: get('type'), orderAccount: get('orderAccount'),
+      zoneId: get('zoneId'), zoneName: get('zoneName'),
+      driverId: get('driverId'), driverName: get('driverName'),
+      lmhubTime: get('lmhubTime'), assignedTime: get('assignedTime'),
+      deliveringTime: get('deliveringTime'), onholdTime: get('onholdTime'),
+      onholdReason: get('onholdReason'), isTodayOnhold: get('isTodayOnhold').toUpperCase(),
+      isStd, riskLevel, riskReason, status, slaStatus, slaText, priority,
+      assignedT, delivT, holdT, lmhubT, assignedHrsAgo, lmhubHrsAgo,
+    };
+  });
+
+  hideError();
+  document.getElementById('successPill').classList.add('show');
+  document.getElementById('successText').textContent = `${allData.length} paket dimuat dari "${fname}" — ${allData.filter(d=>d.isStd).length} paket STD terdeteksi`;
+
+  stdData = allData.filter(d => d.isStd);
+  onholdData = allData.filter(d => d.isTodayOnhold === 'Y');
+  filteredData = [...allData];
+  filteredStdData = [...stdData];
+  filteredOnholdData = [...onholdData];
+  currentPage = 1; stdPage = 1; ohPage = 1;
+
+  updateStats();
+  populateFilters();
+  applyFilters();
+  applyStdFilters();
+  applyOnholdFilters();
+  updateDriverList();
+  updateCharts();
+  updateStdPanel();
+  checkAlerts();
+
+  showToast('success', `✅ ${allData.length} paket | ${stdData.length} STD | ${onholdData.length} ON-HOLD`);
+  document.getElementById('chartsSection').style.display = 'grid';
+  switchTab('overview');
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function updateStats() {
+  const total = allData.length;
+  const onhold = onholdData.length;
+  const urgent = allData.filter(d => d.status === 'red').length;
+  const running = allData.filter(d => d.deliveringTime !== '').length;
+  const std = stdData.length;
+  const risk = stdData.filter(d => d.riskLevel !== 'low').length;
+  const s2safe = stdData.filter(d => d.deliveringTime !== '').length;
+  const s2onhold = stdData.filter(d => d.isTodayOnhold === 'Y').length;
+
+  anim('statTotal', total); anim('statOnhold', onhold); anim('statUrgent', urgent);
+  anim('statRunning', running); anim('statStd', std); anim('statRisk', risk);
+  anim('s2Total', std); anim('s2Risk', risk); anim('s2Onhold', s2onhold); anim('s2Safe', s2safe);
+  anim('oh_total', onhold);
+  anim('oh_stale', allData.filter(d => d.status === 'red' && d.holdT && (new Date() - d.holdT) / 3600000 >= 2).length);
+  anim('oh_std', s2onhold);
+  anim('oh_resolved', onholdData.filter(d => d.deliveringTime !== '').length);
+}
+
+function anim(id, target) {
+  const el = document.getElementById(id); if (!el) return;
+  const start = parseInt(el.textContent) || 0, diff = target - start, steps = 20;
+  let step = 0;
+  const t = setInterval(() => { step++; el.textContent = Math.round(start + diff * step / steps); if (step >= steps) clearInterval(t); }, 16);
+}
+
+// ============================================================
+// FILTERS POPULATE
+// ============================================================
+function populateFilters() {
+  const zones = [...new Set(allData.map(d => d.zoneName).filter(Boolean))].sort();
+  const drivers = [...new Set(allData.map(d => d.driverName).filter(Boolean))].sort();
+  const reasons = [...new Set(onholdData.map(d => d.onholdReason).filter(Boolean))].sort();
+
+  ['filterZone','stdFilterZone','ohFilterZone'].forEach(id => {
+    const sel = document.getElementById(id); if (!sel) return;
+    sel.innerHTML = `<option value="">Semua Zone</option>` + zones.map(z => `<option>${z}</option>`).join('');
+  });
+
+  const ohDrv = document.getElementById('ohFilterDriver');
+  if (ohDrv) ohDrv.innerHTML = `<option value="">Semua Driver</option>` + drivers.map(d => `<option>${d}</option>`).join('');
+
+  const ohReason = document.getElementById('ohFilterReason');
+  if (ohReason) ohReason.innerHTML = `<option value="">Semua Alasan ON-HOLD</option>` + reasons.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('');
+
+  updateReasonChips();
+}
+
+function updateReasonChips() {
+  const container = document.getElementById('ohReasonChips');
+  if (!container) return;
+
+  // Count per kategori
+  const catMap = { reschedule:0, reject:0, notHome:0, address:0, noPhone:0, other:0 };
+  onholdData.forEach(d => { const c = classifyReason(d.onholdReason); catMap[c] = (catMap[c]||0) + 1; });
+
+  const catLabels = {
+    reschedule: { label:'🔄 Reschedule', col:'var(--cyan)', bg:'rgba(6,182,212,.1)', border:'rgba(6,182,212,.3)' },
+    reject:     { label:'❌ Reject',      col:'var(--red)',  bg:'rgba(239,68,68,.1)', border:'rgba(239,68,68,.3)' },
+    notHome:    { label:'🏠 Not Home',    col:'var(--yellow)', bg:'rgba(234,179,8,.1)', border:'rgba(234,179,8,.3)' },
+    address:    { label:'📍 Alamat',      col:'var(--accent)', bg:'rgba(249,115,22,.1)', border:'rgba(249,115,22,.3)' },
+    noPhone:    { label:'📵 No Response', col:'var(--purple)', bg:'rgba(168,85,247,.1)', border:'rgba(168,85,247,.3)' },
+    other:      { label:'🔹 Lainnya',     col:'var(--text2)', bg:'rgba(255,255,255,.04)', border:'var(--border)' },
+  };
+
+  container.innerHTML = Object.entries(catMap)
+    .filter(([,count]) => count > 0)
+    .sort((a,b) => b[1]-a[1])
+    .map(([cat, count]) => {
+      const pct = Math.round(count / onholdData.length * 100);
+      const { label, col, bg, border } = catLabels[cat];
+      return `<div onclick="quickFilterCategory('${cat}')" title="Klik untuk filter kategori ini" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;border:1px solid ${border};background:${bg};font-size:10px;font-family:var(--mono);color:${col};transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+        <span>${label}</span>
+        <span style="background:rgba(255,255,255,.12);padding:1px 7px;border-radius:99px;font-weight:700">${count}</span>
+        <span style="color:var(--text3)">${pct}%</span>
+      </div>`;
+    }).join('');
+
+  // Non-reject shortcut chip
+  const nonRejectCount = onholdData.filter(d => classifyReason(d.onholdReason) !== 'reject').length;
+  if (nonRejectCount > 0) {
+    container.innerHTML += `<div onclick="quickFilterCategory('__nonreject__')" title="Tampilkan semua KECUALI Reject" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.07);font-size:10px;font-family:var(--mono);color:var(--green);transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">
+      <span>✅ Semua KECUALI Reject</span>
+      <span style="background:rgba(34,197,94,.15);padding:1px 7px;border-radius:99px;font-weight:700">${nonRejectCount}</span>
+    </div>`;
+  }
+}
+
+function quickFilterCategory(cat) {
+  document.getElementById('ohFilterCategory').value = cat;
+  applyOnholdFilters();
+}
+
+function quickFilterReason(reason) {
+  document.getElementById('ohFilterReason').value = reason;
+  applyOnholdFilters();
+}
+
+// ============================================================
+// FILTER MAIN
+// ============================================================
+function applyFilters() {
+  const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const status = document.getElementById('filterStatus').value;
+  const zone = document.getElementById('filterZone').value;
+  const type = document.getElementById('filterType').value;
+  filteredData = allData.filter(d => {
+    if (search && !d.spxTn.toLowerCase().includes(search) && !d.driverName.toLowerCase().includes(search) && !d.zoneName.toLowerCase().includes(search)) return false;
+    if (status && d.status !== status) return false;
+    if (zone && d.zoneName !== zone) return false;
+    if (type === 'STD' && !d.isStd) return false;
+    if (type === 'FWD' && (d.isStd || d.type.toLowerCase().includes('return'))) return false;
+    if (type === 'RTN' && !d.type.toLowerCase().includes('return')) return false;
+    return true;
+  });
+  if (sortKey) filteredData.sort((a,b) => sortAsc ? (a[sortKey]||'').localeCompare(b[sortKey]||'') : (b[sortKey]||'').localeCompare(a[sortKey]||''));
+  currentPage = 1; renderTable();
+}
+
+// ============================================================
+// STD FILTERS
+// ============================================================
+function applyStdFilters() {
+  const search = (document.getElementById('stdSearchInput').value || '').toLowerCase();
+  const risk = document.getElementById('stdFilterRisk').value;
+  const zone = document.getElementById('stdFilterZone').value;
+  filteredStdData = stdData.filter(d => {
+    if (search && !d.spxTn.toLowerCase().includes(search) && !d.driverName.toLowerCase().includes(search)) return false;
+    if (risk && d.riskLevel !== risk) return false;
+    if (zone && d.zoneName !== zone) return false;
+    return true;
+  });
+  stdPage = 1; renderStdTable();
+  document.getElementById('stdTableCount').textContent = filteredStdData.length;
+}
+
+// ============================================================
+// ONHOLD FILTERS
+// ============================================================
+
+// Keyword mapping per kategori alasan
+const REASON_KEYWORDS = {
+  reschedule: ['reschedule','rescheduled','reschedule oleh','jadwal ulang','janjian ulang','minta besok','minta lain hari','tunda','postpone','hubungi ulang'],
+  reject:     ['reject','rejected','tolak','ditolak','tidak mau terima','menolak','cancel','batal','dibatalkan','retur','return by customer'],
+  notHome:    ['not home','tidak ada','tidak dirumah','tidak di rumah','rumah kosong','not at home','sedang keluar','tidak berada','keluar'],
+  address:    ['alamat','address','salah alamat','wrong address','tidak ditemukan','not found','tidak ketemu','susah ditemukan','gang','blokir'],
+  noPhone:    ['tidak bisa dihubungi','no response','tidak angkat','phone','hp mati','tidak ada sinyal','unreachable','no answer','dihubungi'],
+};
+
+function classifyReason(reason) {
+  if (!reason) return 'other';
+  const r = reason.toLowerCase();
+  for (const [cat, keywords] of Object.entries(REASON_KEYWORDS)) {
+    if (keywords.some(k => r.includes(k))) return cat;
+  }
+  return 'other';
+}
+
+function applyOnholdFilters() {
+  const search    = (document.getElementById('ohSearch').value || '').toLowerCase();
+  const category  = document.getElementById('ohFilterCategory').value;
+  const reason    = document.getElementById('ohFilterReason').value;
+  const zone      = document.getElementById('ohFilterZone').value;
+  const driver    = document.getElementById('ohFilterDriver').value;
+  const resolved  = document.getElementById('ohFilterResolved').value;
+  const duration  = document.getElementById('ohFilterDuration').value;
+  const now       = new Date();
+
+  filteredOnholdData = onholdData.filter(d => {
+    // Search
+    if (search && !d.spxTn.toLowerCase().includes(search) &&
+        !d.driverName.toLowerCase().includes(search) &&
+        !(d.onholdReason||'').toLowerCase().includes(search)) return false;
+
+    // Kategori alasan
+    if (category) {
+      const cat = classifyReason(d.onholdReason);
+      if (category === '__nonreject__') {
+        if (cat === 'reject') return false;
+      } else {
+        if (cat !== category) return false;
+      }
+    }
+
+    // Alasan spesifik
+    if (reason && (d.onholdReason||'') !== reason) return false;
+
+    // Zone & driver
+    if (zone && d.zoneName !== zone) return false;
+    if (driver && d.driverName !== driver) return false;
+
+    // Resolusi
+    if (resolved === 'yes' && !d.deliveringTime) return false;
+    if (resolved === 'no'  &&  d.deliveringTime) return false;
+
+    // Durasi hold
+    if (duration && d.holdT) {
+      const hrs = (now - d.holdT) / 3600000;
+      if (duration === 'crit' && hrs < 2) return false;
+      if (duration === 'warn' && (hrs < 1 || hrs >= 2)) return false;
+      if (duration === 'ok'   && hrs >= 1) return false;
+    }
+
+    return true;
+  });
+
+  // Update active filter info banner
+  const activeInfo = document.getElementById('ohActiveInfo');
+  const activeFilters = [];
+  if (category === '__nonreject__') activeFilters.push('✅ Tampil: Semua KECUALI Reject');
+  else if (category) activeFilters.push('📋 Kategori: ' + {reschedule:'Reschedule',reject:'Reject',notHome:'Not Home',address:'Alamat',noPhone:'Tidak Bisa Dihubungi',other:'Lainnya'}[category]);
+  if (reason) activeFilters.push('Alasan: ' + reason.substring(0,30));
+  if (zone) activeFilters.push('Zone: ' + zone);
+  if (driver) activeFilters.push('Driver: ' + driver);
+  if (resolved === 'yes') activeFilters.push('Sudah Resolusi');
+  if (resolved === 'no') activeFilters.push('Belum Resolusi');
+  if (duration === 'crit') activeFilters.push('Durasi > 2 jam');
+  if (duration === 'warn') activeFilters.push('Durasi 1–2 jam');
+  if (duration === 'ok') activeFilters.push('Durasi < 1 jam');
+
+  if (activeFilters.length) {
+    activeInfo.style.display = 'block';
+    activeInfo.innerHTML = '🔍 Filter aktif: ' + activeFilters.join(' &nbsp;|&nbsp; ') + ` &nbsp;→ <strong>${filteredOnholdData.length}</strong> hasil`;
+  } else {
+    activeInfo.style.display = 'none';
+  }
+
+  ohPage = 1;
+  renderOnholdTable();
+  document.getElementById('ohTableCount').textContent = filteredOnholdData.length;
+}
+
+function resetOnholdFilters() {
+  ['ohSearch'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['ohFilterCategory','ohFilterReason','ohFilterZone','ohFilterDriver','ohFilterResolved','ohFilterDuration'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('ohActiveInfo').style.display = 'none';
+  applyOnholdFilters();
+}
+
+// ============================================================
+// SORT
+// ============================================================
+function sortTable(key) {
+  if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+  applyFilters();
+}
+
+// ============================================================
+// RENDER MAIN TABLE
+// ============================================================
+function renderTable() {
+  const tbody = document.getElementById('mainTableBody');
+  const empty = document.getElementById('emptyState');
+  document.getElementById('tableCount').textContent = filteredData.length;
+  if (!filteredData.length) {
+    tbody.innerHTML = allData.length ? `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text3)">Tidak ada data sesuai filter</td></tr>` : '';
+    empty.style.display = allData.length ? 'none' : 'block';
+    document.getElementById('paginationWrap').style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  const start = (currentPage-1)*PAGE_SIZE;
+  const page = filteredData.slice(start, start+PAGE_SIZE);
+  tbody.innerHTML = page.map(d => {
+    const statusBadge = d.status==='red' ? '<span class="badge badge-red">ON-HOLD</span>'
+      : d.status==='cyan' ? '<span class="badge badge-cyan">STD RISIKO</span>'
+      : d.status==='green' ? '<span class="badge badge-green">Delivering</span>'
+      : d.status==='yellow' ? '<span class="badge badge-yellow">Assigned</span>'
+      : '<span class="badge badge-blue">Pending</span>';
+    const prioBadge = d.isStd ? '<span class="badge badge-purple">STD</span>'
+      : d.type.toLowerCase().includes('return') ? '<span class="badge badge-blue">RTN</span>'
+      : '<span class="badge badge-orange">FWD</span>';
+    const slaClass = 'sla-'+d.slaStatus;
+    return `<tr class="status-${d.status}">
+      <td style="font-family:var(--mono);font-size:10px;color:var(--text)">${esc(d.spxTn)}</td>
+      <td>${prioBadge}</td>
+      <td><div style="font-size:11px;font-weight:600">${esc(d.driverName||'—')}</div><div style="font-size:9px;color:var(--text3);font-family:var(--mono)">${esc(d.driverId||'')}</div></td>
+      <td><div style="font-size:11px">${esc(d.zoneName||'—')}</div></td>
+      <td><span class="${slaClass}" style="font-size:10px;font-family:var(--mono)">${d.slaText}</span></td>
+      <td style="font-size:10px;color:var(--red);max-width:120px;overflow:hidden;text-overflow:ellipsis">${esc(d.onholdReason||'—')}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:10px;color:var(--text3);font-family:var(--mono)">${d.assignedTime?d.assignedTime.substring(0,16):'—'}</td>
+      <td style="font-size:10px;color:${d.deliveringTime?'var(--green)':'var(--text3)'};font-family:var(--mono)">${d.deliveringTime?d.deliveringTime.substring(0,16):'—'}</td>
+    </tr>`;
+  }).join('');
+  renderPagination('paginationWrap','paginationInfo','pageBtns', filteredData.length, currentPage, p => { currentPage=p; renderTable(); });
+}
+
+// ============================================================
+// RENDER STD TABLE
+// ============================================================
+function renderStdTable() {
+  const tbody = document.getElementById('stdTableBody');
+  const empty = document.getElementById('stdEmptyState');
+  if (!filteredStdData.length) {
+    tbody.innerHTML = ''; empty.style.display = 'block';
+    document.getElementById('stdPaginationWrap').style.display = 'none'; return;
+  }
+  empty.style.display = 'none';
+  const start = (stdPage-1)*PAGE_SIZE;
+  tbody.innerHTML = filteredStdData.slice(start, start+PAGE_SIZE).map(d => {
+    const riskBadge = d.riskLevel==='high' ? '<span class="badge badge-red">RISIKO TINGGI</span>'
+      : d.riskLevel==='med' ? '<span class="badge badge-yellow">PERHATIAN</span>'
+      : '<span class="badge badge-green">AMAN</span>';
+    const statusBadge = d.status==='red'?'<span class="badge badge-red">ON-HOLD</span>'
+      :d.status==='green'?'<span class="badge badge-green">Delivering</span>'
+      :d.status==='yellow'?'<span class="badge badge-yellow">Assigned</span>'
+      :'<span class="badge badge-blue">Pending</span>';
+    const typeBadge = d.type.toLowerCase().includes('return')?'<span class="badge badge-blue">RTN</span>':'<span class="badge badge-purple">FWD</span>';
+    return `<tr class="status-${d.status}">
+      <td style="font-family:var(--mono);font-size:10px;color:var(--text)">${esc(d.spxTn)}</td>
+      <td>${typeBadge}</td>
+      <td><div style="font-size:11px;font-weight:600">${esc(d.driverName||'—')}</div></td>
+      <td style="font-size:11px">${esc(d.zoneName||'—')}</td>
+      <td>${riskBadge}<div style="font-size:9px;color:var(--text3);margin-top:3px">${esc(d.riskReason)}</div></td>
+      <td>${statusBadge}</td>
+      <td style="font-size:10px;color:var(--text3);font-family:var(--mono)">${d.assignedTime?d.assignedTime.substring(0,16):'—'}</td>
+      <td style="font-size:10px;color:${d.deliveringTime?'var(--green)':'var(--text3)'};font-family:var(--mono)">${d.deliveringTime?d.deliveringTime.substring(0,16):'—'}</td>
+      <td style="font-size:10px;color:var(--red);font-family:var(--mono)">${d.onholdTime?d.onholdTime.substring(0,16):'—'}</td>
+      <td style="font-size:10px;color:var(--red);max-width:100px;overflow:hidden;text-overflow:ellipsis">${esc(d.onholdReason||'—')}</td>
+    </tr>`;
+  }).join('');
+  renderPagination('stdPaginationWrap','stdPaginationInfo','stdPageBtns', filteredStdData.length, stdPage, p => { stdPage=p; renderStdTable(); });
+}
+
+// ============================================================
+// RENDER ONHOLD TABLE
+// ============================================================
+function renderOnholdTable() {
+  const tbody = document.getElementById('ohTableBody');
+  const empty = document.getElementById('ohEmptyState');
+  document.getElementById('ohTableCount').textContent = filteredOnholdData.length;
+  if (!filteredOnholdData.length) {
+    tbody.innerHTML = ''; empty.style.display = 'block';
+    document.getElementById('ohPaginationWrap').style.display = 'none'; return;
+  }
+  empty.style.display = 'none';
+  const start = (ohPage-1)*PAGE_SIZE;
+  const now = new Date();
+  const catBadges = {
+    reschedule: '<span class="badge badge-cyan">🔄 Reschedule</span>',
+    reject:     '<span class="badge badge-red">❌ Reject</span>',
+    notHome:    '<span class="badge badge-yellow">🏠 Not Home</span>',
+    address:    '<span class="badge badge-orange">📍 Alamat</span>',
+    noPhone:    '<span class="badge badge-purple">📵 No Response</span>',
+    other:      '<span class="badge" style="background:rgba(255,255,255,.06);color:var(--text3)">🔹 Lainnya</span>',
+  };
+  tbody.innerHTML = filteredOnholdData.slice(start, start+PAGE_SIZE).map(d => {
+    let durText = '—', durClass = '';
+    if (d.holdT) {
+      const hrs = (now - d.holdT) / 3600000;
+      durText = hrs >= 1 ? `${hrs.toFixed(1)} jam` : `${Math.round(hrs*60)} mnt`;
+      durClass = hrs >= 2 ? 'sla-crit' : hrs >= 1 ? 'sla-warn' : 'sla-ok';
+    }
+    const cat = classifyReason(d.onholdReason);
+    const catBadge = catBadges[cat] || catBadges.other;
+    const finalStatus = d.deliveringTime ? '<span class="badge badge-green">✅ Resolusi</span>' : '<span class="badge badge-red">⏳ Belum</span>';
+    const typeBadge = d.isStd ? '<span class="badge badge-purple">STD</span>' : d.type.toLowerCase().includes('return') ? '<span class="badge badge-blue">RTN</span>' : '<span class="badge badge-orange">FWD</span>';
+    return `<tr class="status-red">
+      <td style="font-family:var(--mono);font-size:10px;color:var(--text)">${esc(d.spxTn)}</td>
+      <td><div style="font-size:11px;font-weight:600">${esc(d.driverName||'—')}</div><div style="font-size:9px;color:var(--text3)">${esc(d.driverId||'')}</div></td>
+      <td style="font-size:11px">${esc(d.zoneName||'—')}</td>
+      <td>${catBadge}</td>
+      <td style="font-size:10px;color:var(--red);max-width:160px;overflow:hidden;text-overflow:ellipsis" title="${esc(d.onholdReason||'')}">${esc(d.onholdReason||'—')}</td>
+      <td style="font-size:10px;color:var(--text3);font-family:var(--mono)">${d.onholdTime?d.onholdTime.substring(0,16):'—'}</td>
+      <td><span class="${durClass}" style="font-size:11px;font-family:var(--mono);font-weight:600">${durText}</span></td>
+      <td>${finalStatus}</td>
+      <td>${typeBadge}</td>
+    </tr>`;
+  }).join('');
+  renderPagination('ohPaginationWrap','ohPaginationInfo','ohPageBtns', filteredOnholdData.length, ohPage, p => { ohPage=p; renderOnholdTable(); });
+}
+
+// ============================================================
+// PAGINATION HELPER
+// ============================================================
+function renderPagination(wrapId, infoId, btnId, total, page, cb) {
+  const wrap = document.getElementById(wrapId);
+  const info = document.getElementById(infoId);
+  const btns = document.getElementById(btnId);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const start = (page-1)*PAGE_SIZE;
+  info.textContent = `${start+1}–${Math.min(start+PAGE_SIZE,total)} dari ${total}`;
+  btns.innerHTML = '';
+  const make = (label, p, active) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn'+(active?' active':'');
+    b.textContent = label;
+    b.onclick = () => cb(p);
+    btns.appendChild(b);
+  };
+  if (page > 1) make('‹', page-1, false);
+  for (let p = Math.max(1,page-2); p <= Math.min(totalPages,page+2); p++) make(p, p, p===page);
+  if (page < totalPages) make('›', page+1, false);
+  wrap.style.display = 'flex';
+}
+
+// ============================================================
+// STD PANEL
+// ============================================================
+function updateStdPanel() {
+  const highRisk = stdData.filter(d => d.riskLevel === 'high');
+  const medRisk = stdData.filter(d => d.riskLevel === 'med');
+  document.getElementById('highRiskCount').textContent = highRisk.length;
+  document.getElementById('medRiskCount').textContent = medRisk.length;
+
+  const renderRiskList = (items, id) => {
+    const el = document.getElementById(id);
+    if (!items.length) { el.innerHTML = '<div class="empty-state" style="padding:16px"><div class="empty-title">Tidak ada</div></div>'; return; }
+    el.innerHTML = items.slice(0,8).map(d => {
+      const col = d.riskLevel==='high' ? 'var(--red)' : 'var(--yellow)';
+      return `<div class="std-alert-item">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text);min-width:110px">${esc(d.spxTn)}</div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:600">${esc(d.driverName||'No Driver')}</div>
+          <div style="font-size:9px;color:${col}">${esc(d.riskReason)}</div>
+        </div>
+        <span class="badge ${d.riskLevel==='high'?'badge-red':'badge-yellow'}">${esc(d.zoneName||'—')}</span>
+      </div>`;
+    }).join('');
+  };
+  renderRiskList(highRisk, 'highRiskList');
+  renderRiskList(medRisk, 'medRiskList');
+
+  // Update checklist insights
+  const unassigned = stdData.filter(d => !d.assignedTime && d.lmhubHrsAgo > 2);
+  const slowStart = stdData.filter(d => d.assignedTime && !d.deliveringTime && d.assignedHrsAgo > 1);
+  const returnStd = stdData.filter(d => d.type.toLowerCase().includes('return') && !d.deliveringTime);
+
+  document.getElementById('checkUnassigned').textContent = unassigned.length ? `⚠ ${unassigned.length} paket STD belum di-assign > 2 jam` : '✅ Semua STD sudah di-assign';
+  document.getElementById('checkSlowStart').textContent = slowStart.length ? `⚠ ${slowStart.length} paket STD assigned tapi belum berangkat > 1 jam` : '✅ Semua STD assigned sudah berangkat';
+  document.getElementById('checkReturn').textContent = returnStd.length ? `⚠ ${returnStd.length} STD Return belum diproses` : '✅ Semua STD Return sudah diproses';
+
+  // Zone worst
+  const zoneOnhold = {};
+  stdData.filter(d => d.isTodayOnhold==='Y').forEach(d => { zoneOnhold[d.zoneName||'Unknown'] = (zoneOnhold[d.zoneName||'Unknown']||0)+1; });
+  const worstZone = Object.entries(zoneOnhold).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('checkZoneHold').textContent = worstZone ? `⚠ Zone terburuk: ${worstZone[0]} (${worstZone[1]} ON-HOLD)` : '✅ Tidak ada zone dengan ON-HOLD tinggi';
+
+  // Driver with most STD onhold
+  const drvHold = {};
+  stdData.filter(d => d.isTodayOnhold==='Y').forEach(d => { drvHold[d.driverName||'Unknown'] = (drvHold[d.driverName||'Unknown']||0)+1; });
+  const worstDrv = Object.entries(drvHold).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('checkDriverHold').textContent = worstDrv ? `⚠ Driver terburuk: ${worstDrv[0]} (${worstDrv[1]} STD ON-HOLD)` : '✅ Tidak ada driver STD bermasalah';
+}
+
+// ============================================================
+// DRIVER LIST
+// ============================================================
+function updateDriverList() {
+  const map = {};
+  allData.forEach(d => {
+    const n = d.driverName||'Unknown';
+    if (!map[n]) map[n] = { name:n, id:d.driverId, total:0, onhold:0, std:0, stdOnhold:0, delivering:0 };
+    map[n].total++;
+    if (d.isTodayOnhold==='Y') map[n].onhold++;
+    if (d.isStd) { map[n].std++; if (d.isTodayOnhold==='Y') map[n].stdOnhold++; }
+    if (d.deliveringTime) map[n].delivering++;
+  });
+  const drivers = Object.values(map).sort((a,b) => b.onhold-a.onhold || b.total-a.total);
+  const dangerCount = drivers.filter(d => d.onhold > 0).length;
+  const badge = document.getElementById('driverDangerCount');
+  if (dangerCount) { badge.textContent = dangerCount+' BERMASALAH'; badge.style.display='inline-flex'; }
+
+  const list = document.getElementById('driverList');
+  if (!drivers.length) { list.innerHTML='<div class="empty-state"><span class="empty-icon">🚗</span><div class="empty-title">Belum ada driver</div></div>'; return; }
+  list.innerHTML = drivers.slice(0,15).map((d,i) => {
+    const isDanger = d.onhold > 0;
+    const isRisk = d.stdOnhold > 0;
+    const pct = Math.round(d.onhold/d.total*100);
+    return `<div class="driver-item ${isDanger?'danger':isRisk?'risk':''}">
+      <div class="driver-rank">${i+1}</div>
+      <div class="driver-info">
+        <div class="driver-name">${esc(d.name)} ${isDanger?'⚠':''}${isRisk&&!isDanger?'🎯':''}</div>
+        <div class="driver-id">${esc(d.id||'No ID')} ${d.std?`• ${d.std} STD`:''}</div>
+        <div class="prog-wrap"><div class="prog-fill" style="width:${pct}%;background:${isDanger?'var(--red)':isRisk?'var(--cyan)':'var(--green)'}"></div></div>
+      </div>
+      <div class="driver-stats">
+        <div class="driver-stat"><div class="driver-stat-val" style="color:var(--text)">${d.total}</div><div class="driver-stat-lbl">Total</div></div>
+        <div class="driver-stat"><div class="driver-stat-val" style="color:var(--red)">${d.onhold}</div><div class="driver-stat-lbl">Hold</div></div>
+        <div class="driver-stat"><div class="driver-stat-val" style="color:var(--purple)">${d.stdOnhold}</div><div class="driver-stat-lbl">STD↓</div></div>
+        <div class="driver-stat"><div class="driver-stat-val" style="color:var(--green)">${d.delivering}</div><div class="driver-stat-lbl">Deliv</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+function updateCharts() {
+  // Zone onhold
+  const zmap = {};
+  allData.filter(d => d.isTodayOnhold==='Y').forEach(d => { const z=d.zoneName||'N/A'; zmap[z]=(zmap[z]||0)+1; });
+  if (zoneChart) zoneChart.destroy();
+  zoneChart = new Chart(document.getElementById('zoneChart').getContext('2d'), {
+    type:'bar', data:{ labels:Object.keys(zmap), datasets:[{ label:'ON-HOLD', data:Object.values(zmap), backgroundColor:'rgba(239,68,68,.6)', borderColor:'rgba(239,68,68,1)', borderWidth:1, borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{color:'#94a3b8',font:{size:9}},grid:{color:'#1f2d45'}}, y:{ticks:{color:'#94a3b8',font:{size:9}},grid:{color:'#1f2d45'},beginAtZero:true} } }
+  });
+
+  // STD breakdown
+  const stdNormal = stdData.filter(d => d.riskLevel==='low').length;
+  const stdMed = stdData.filter(d => d.riskLevel==='med').length;
+  const stdHigh = stdData.filter(d => d.riskLevel==='high').length;
+  if (stdChart) stdChart.destroy();
+  stdChart = new Chart(document.getElementById('stdChart').getContext('2d'), {
+    type:'doughnut', data:{ labels:['Aman','Perlu Perhatian','Berisiko Tinggi'], datasets:[{ data:[stdNormal,stdMed,stdHigh], backgroundColor:['rgba(34,197,94,.7)','rgba(234,179,8,.7)','rgba(239,68,68,.7)'], borderColor:['rgba(34,197,94,1)','rgba(234,179,8,1)','rgba(239,68,68,1)'], borderWidth:1 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#94a3b8',font:{size:9},padding:8} } } }
+  });
+
+  // Driver workload top5
+  const dmap = {};
+  allData.forEach(d => { const n=(d.driverName||'N/A').substring(0,10); if(!dmap[n]) dmap[n]={total:0,onhold:0,deliv:0}; dmap[n].total++; if(d.isTodayOnhold==='Y') dmap[n].onhold++; if(d.deliveringTime) dmap[n].deliv++; });
+  const top5 = Object.entries(dmap).sort((a,b)=>b[1].total-a[1].total).slice(0,5);
+  if (driverChart) driverChart.destroy();
+  driverChart = new Chart(document.getElementById('driverChart').getContext('2d'), {
+    type:'bar', data:{ labels:top5.map(([k])=>k), datasets:[
+      { label:'Delivering', data:top5.map(([,v])=>v.deliv), backgroundColor:'rgba(34,197,94,.6)', borderRadius:3 },
+      { label:'ON-HOLD', data:top5.map(([,v])=>v.onhold), backgroundColor:'rgba(239,68,68,.6)', borderRadius:3 },
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#94a3b8',font:{size:9}}}}, scales:{ x:{stacked:true,ticks:{color:'#94a3b8',font:{size:9}},grid:{color:'#1f2d45'}}, y:{stacked:true,ticks:{color:'#94a3b8',font:{size:9}},grid:{color:'#1f2d45'},beginAtZero:true} } }
+  });
+}
+
+// ============================================================
+// ALERTS
+// ============================================================
+function checkAlerts() {
+  const now = new Date();
+  const critical = allData.filter(d => d.status==='red' && d.holdT && (now-d.holdT)/3600000>=2);
+  const banner = document.getElementById('alertsBanner');
+  if (critical.length) {
+    banner.classList.add('show');
+    banner.innerHTML = `<span style="color:var(--red);font-size:15px">🚨</span><span style="color:var(--red);font-size:11px;font-weight:700">ALERT: ${critical.length} paket ON-HOLD > 2 jam!</span>`
+      + critical.slice(0,3).map(d=>`<span style="font-size:10px;color:var(--red);font-family:var(--mono);background:rgba(239,68,68,.1);padding:2px 7px;border-radius:4px">⚠ ${d.spxTn}</span>`).join('');
+  } else banner.classList.remove('show');
+
+  const stdRisk = stdData.filter(d => d.riskLevel==='high');
+  const stdBanner = document.getElementById('stdRiskBanner');
+  if (stdRisk.length) {
+    stdBanner.classList.add('show');
+    stdBanner.innerHTML = `<span style="color:var(--cyan);font-size:15px">🎯</span><span style="color:var(--cyan);font-size:11px;font-weight:700">STD ALERT: ${stdRisk.length} paket Standard berisiko reschedule!</span>`
+      + `<button class="btn" style="font-size:10px;color:var(--cyan);border-color:rgba(6,182,212,.3)" onclick="switchTab('std')">Lihat Detail ↗</button>`;
+    showToast('cyan', `🎯 ${stdRisk.length} paket STD berisiko reschedule`);
+  } else stdBanner.classList.remove('show');
+
+  if (critical.length) showToast('warn', `🚨 ${critical.length} paket ON-HOLD > 2 jam!`);
+}
+
+// ============================================================
+// FILTER ACTIONS (STD PANEL BUTTONS)
+// ============================================================
+function filterStdUnassigned() {
+  document.getElementById('stdFilterRisk').value = 'high';
+  applyStdFilters();
+  switchTab('std');
+}
+function filterStdSlowStart() {
+  document.getElementById('stdFilterRisk').value = 'med';
+  applyStdFilters();
+  switchTab('std');
+}
+function filterStdByZone() {
+  switchTab('std');
+}
+function filterStdReturn() {
+  filteredStdData = stdData.filter(d => d.type.toLowerCase().includes('return'));
+  stdPage = 1; renderStdTable();
+  document.getElementById('stdTableCount').textContent = filteredStdData.length;
+  switchTab('std');
+}
+
+// ============================================================
+// EXPORTS
+// ============================================================
+function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function toXlsx(data, fields, filename) {
+  if (!data.length) { showToast('warn','Tidak ada data'); return; }
+  const ws = XLSX.utils.json_to_sheet(data.map(d => { const o={}; fields.forEach(([k,l])=>o[l]=d[k]); return o; }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  XLSX.writeFile(wb, filename);
+  showToast('success', `✅ Export ${data.length} baris`);
+}
+
+function exportExcel() {
+  toXlsx(filteredData, [['spxTn','SPX TN'],['priority','Prioritas'],['driverName','Driver'],['zoneName','Zone'],['isTodayOnhold','ON-HOLD'],['onholdReason','Alasan'],['assignedTime','Assigned'],['deliveringTime','Delivering'],['onholdTime','Waktu Hold'],['riskLevel','Level Risiko']], `SPX_All_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportStdExcel() {
+  toXlsx(filteredStdData, [['spxTn','SPX TN'],['type','Tipe'],['driverName','Driver'],['zoneName','Zone'],['riskLevel','Level Risiko'],['riskReason','Alasan Risiko'],['assignedTime','Assigned'],['deliveringTime','Delivering'],['onholdTime','Waktu Hold'],['onholdReason','Alasan Hold']], `SPX_STD_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportOnholdExcel() {
+  toXlsx(filteredOnholdData, [['spxTn','SPX TN'],['driverName','Driver'],['zoneName','Zone'],['onholdReason','Alasan'],['onholdTime','Waktu Hold'],['deliveringTime','Delivering'],['isStd','Is STD']], `SPX_ONHOLD_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportPDF() {
+  if (!filteredData.length) { showToast('warn','Tidak ada data'); return; }
+  const now = new Date().toLocaleString('id-ID');
+  const rows = filteredData.slice(0,100).map(d => `<tr style="border-bottom:1px solid #e2e8f0">
+    <td style="padding:5px 8px;font-size:10px;font-family:monospace">${esc(d.spxTn)}</td>
+    <td style="padding:5px 8px;font-size:10px">${esc(d.driverName||'—')}</td>
+    <td style="padding:5px 8px;font-size:10px">${esc(d.zoneName||'—')}</td>
+    <td style="padding:5px 8px;font-size:10px">${d.isStd?'STD':d.type.toLowerCase().includes('return')?'RTN':'FWD'}</td>
+    <td style="padding:5px 8px;font-size:10px;color:${d.isTodayOnhold==='Y'?'#ef4444':'#22c55e'}">${d.isTodayOnhold==='Y'?'ON-HOLD':'Normal'}</td>
+    <td style="padding:5px 8px;font-size:10px;color:${d.riskLevel==='high'?'#ef4444':d.riskLevel==='med'?'#eab308':'#22c55e'}">${d.riskLevel==='high'?'Risiko Tinggi':d.riskLevel==='med'?'Perhatian':'Aman'}</td>
+  </tr>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan SPX</title>
+  <style>body{font-family:Arial;margin:20px;color:#1e293b}h1{font-size:16px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:7px;text-align:left;font-size:10px;border-bottom:2px solid #e2e8f0}</style>
+  </head><body>
+  <h1>📦 SPX Express — Hub Tarakan Timur</h1>
+  <p style="font-size:11px;color:#64748b">Laporan Monitoring | ${now} | Total: ${filteredData.length} paket | STD: ${stdData.length}</p>
+  <table><thead><tr><th>SPX TN</th><th>Driver</th><th>Zone</th><th>Tipe</th><th>ON-HOLD</th><th>Risiko STD</th></tr></thead><tbody>${rows}</tbody></table>
+  ${filteredData.length>100?'<p style="font-size:10px;color:#94a3b8;margin-top:10px">* 100 baris pertama saja</p>':''}
+  </body></html>`;
+  const w = window.open('','_blank');
+  w.document.write(html); w.document.close();
+  setTimeout(() => w.print(), 500);
+  showToast('success','🖨 PDF siap cetak');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(type, msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, 4000);
+}
+
+function showError(msg) {
+  const b = document.getElementById('errorBox'); b.textContent = msg; b.classList.add('show');
+  document.getElementById('successPill').classList.remove('show');
+}
+function hideError() { document.getElementById('errorBox').classList.remove('show'); }
+
+// Init
+renderTable();
+renderStdTable();
+renderOnholdTable();
+</script>
+</body>
+</html>
